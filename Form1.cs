@@ -14,8 +14,12 @@ namespace treasuremaze
     public partial class Form1 : Form
     {
         public Image mcSheet;
+        public Image chestSheet;
         public Player mc;
+        public Chest chest;
         public int[,] map = new int[MapController.MapHeight, MapController.MapWidth];
+        public int[,] emptymap = new int[MapController.MapHeight, MapController.MapWidth];
+        private readonly Random random = new Random();
         public Form1()
         {
             InitializeComponent();
@@ -25,6 +29,8 @@ namespace treasuremaze
             KeyDown += new KeyEventHandler(OnPress);
             KeyUp += new KeyEventHandler(OnKeyUp);
 
+            timer1.Start();
+            timer2.Start();
             Init();
         }
 
@@ -70,6 +76,16 @@ namespace treasuremaze
             score.BackColor = Color.Black;
             this.Controls.Add(score);
         }
+        public void ScoreCount()
+        {
+            Label scoreCount = new Label();
+            scoreCount.Text = " points";
+            scoreCount.Location = new Point(50, (MapController.Cell) * (MapController.MapHeight));
+            scoreCount.AutoSize = true;
+            scoreCount.ForeColor = Color.White;
+            scoreCount.BackColor = Color.Black;
+            this.Controls.Add(scoreCount);
+        }
         public void Time()
         {
             Label time = new Label();
@@ -81,6 +97,33 @@ namespace treasuremaze
             this.Controls.Add(time);
         }
 
+        public void Wall()
+        {
+            PictureBox wall = new PictureBox();
+            wall.Location = new Point(100, 100);
+        }
+
+
+        int timeleft = 10;
+        private void timer2_Tick(object sender, EventArgs e)
+        {
+            Label timer = new Label();
+            timer.Location = new Point(140, (MapController.Cell) * (MapController.MapHeight));
+            timer.AutoSize = true;
+            timer.ForeColor = Color.White;
+            timer.BackColor = Color.Black;
+            this.Controls.Add(timer);
+            if (timeleft > 0)
+            {
+                timeleft -= 1;
+                timer.Text = timeleft + " seconds";
+            }
+            else
+            {
+                timer2.Stop();
+            }
+
+        }
 
 
         public void Init()
@@ -89,12 +132,32 @@ namespace treasuremaze
             this.Width = (MapController.Cell+1) * MapController.MapWidth;
             this.Height = (MapController.Cell+2) * (MapController.MapHeight+1);
             Score();
+            ScoreCount();
             Time();
 
             mcSheet = new Bitmap(Path.Combine(new DirectoryInfo(Directory.GetCurrentDirectory()).Parent.Parent.FullName.ToString(), "Assets\\mc.png"));
-            mc = new Player(21, 0, Hero.IdleFrame, Hero.UpFrame, Hero.DownFrame, Hero.RightFrame, Hero.LeftFrame, mcSheet);
-            timer1.Start();
-            timer2.Start();
+            mc = new Player(23, 1, Hero.IdleFrame, Hero.UpFrame, Hero.DownFrame, Hero.RightFrame, Hero.LeftFrame, mcSheet);
+            SpondChest();
+        }
+
+        public void SpondChest()
+        {
+            bool isempty = false;
+            int [,] Empty = MapController.GetEmptyMap();
+            int chestX = random.Next(1, MapController.MapWidth-1);
+            int chestY = random.Next(1, MapController.MapHeight-1);
+            do
+            {
+                isempty = false;
+                chestX = random.Next(1, MapController.MapWidth - 1);
+                chestY = random.Next(1, MapController.MapHeight - 1);
+            } while (Empty[chestX, chestY] != 0);
+            isempty = true;
+
+            chestSheet = new Bitmap(Path.Combine(new DirectoryInfo(Directory.GetCurrentDirectory()).Parent.Parent.FullName.ToString(), "Assets\\chest_1.png"));
+            if (isempty == true)
+                chest = new Chest(chestX * 22 + 3, chestY * 22 + 4, chestSheet);
+
         }
 
         public void Update(object sender, EventArgs e)
@@ -105,8 +168,6 @@ namespace treasuremaze
                     mc.Move();
             }
             //Walls.WillHit(mc);
-
-       
             Invalidate();
         }
 
@@ -114,23 +175,10 @@ namespace treasuremaze
         {
             Graphics g = e.Graphics;
             MapController.DrawMap(g);
+            chest.AddChest(g);
             mc.PlayAnimation(g);
         }
 
-        int timeleft = 5;
-        private void timer2_Tick(object sender, EventArgs e)
-        {
-            if (timeleft > 0)
-            {
-                timeleft -= 1;
-                label1.Text = timeleft + " seconds";
-            }
-            else
-            {
-                mc.DirX = 0;
-                mc.DirY = 0;
-                mc.IsMoving = false;
-            }
-        }
+        
     }
 }
